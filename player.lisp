@@ -13,7 +13,7 @@
 
 (defun scan ()
   (setf *mp3s*
-        (loop for file in (directory (format nil "~a~a" *base-dir* "/*/*.mp3"))
+        (loop for file in (directory (format nil "~a~a" *base-dir* "/*.mp3"))
               collect (cons
                         (symbol-name (gensym))
                         file))))
@@ -69,7 +69,8 @@
 
 (defun serve (port)
   (usocket:with-socket-listener (socket "0.0.0.0" port :reuse-address t)
-    (loop 
+    (ignore-errors
+     (loop 
        (usocket:with-server-socket (connection (usocket:socket-accept socket))
         (with-open-stream (stream (usocket:socket-stream connection))
            (let* ((first-line (read-line stream))
@@ -80,7 +81,7 @@
                 (play (let
                         ((r (subseq first-line 6)))
                         (subseq r 0 (position #\/ r)))))
-               (t (h400)))))))))
+               (t (h400))))))))))
 
 
 (defun main ()
