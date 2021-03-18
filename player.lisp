@@ -11,13 +11,6 @@
 
 (defvar *mp3s*)
 
-(defun scan ()
-  (setf *mp3s*
-        (loop for file in (directory (format nil "~a~a" *base-dir* "/*.mp3"))
-              collect (cons
-                        (symbol-name (gensym))
-                        file))))
-
 (defun h200 ()
     (format t "HTTP/1.0 200 OK~%~%"))
 
@@ -36,7 +29,7 @@
     <span>~a</span>
 </li>"
    (car mp3)
-   (cdr mp3)))
+   (first (cdr mp3))))
 
 
 (defun index ()
@@ -63,26 +56,37 @@
 
 (defun play (mp3id)
   (let
-    ((filename (cdr (assoc mp3id *mp3s* :test #'equal))))
-    (mpg123 filename)
+    ((action (second (cdr (assoc mp3id *mp3s* :test #'equal)))))
+    (funcall action)
     (h303)))
 
 (defun serve (port)
   (usocket:with-socket-listener (socket "0.0.0.0" port :reuse-address t)
     (ignore-errors
-     (loop 
-       (usocket:with-server-socket (connection (usocket:socket-accept socket))
-        (with-open-stream (stream (usocket:socket-stream connection))
-           (let* ((first-line (read-line stream))
-                  (*standard-output* stream))       
-             (cond
-               ((string= "GET / " (subseq first-line 0 6))  (index))
-               ((string= "POST /" (subseq first-line 0 6))
-                (play (let
-                        ((r (subseq first-line 6)))
-                        (subseq r 0 (position #\/ r)))))
-               (t (h400))))))))))
+      (loop 
+        (usocket:with-server-socket (connection (usocket:socket-accept socket))
+         (with-open-stream (stream (usocket:socket-stream connection))
+            (let* ((first-line (read-line stream))
+                   (*standard-output* stream))       
+              (cond
+                ((string= "GET / " (subseq first-line 0 6))  (index))
+                ((string= "POST /" (subseq first-line 0 6))
+                 (play (let
+                         ((r (subseq first-line 6)))
+                         (subseq r 0 (position #\/ r)))))
+                (t (h400))))))))))
 
+
+
+(defun scan ()
+  (setf *mp3s*
+        (loop for file in (directory (format nil "~a~a" *base-dir* "/*.mp3"))
+              collect (cons
+                        (symbol-name (gensym))
+                        (list
+                          file
+                          (lambda ()
+                            (mpg123 file)))))))
 
 (defun main ()
   (scan)
