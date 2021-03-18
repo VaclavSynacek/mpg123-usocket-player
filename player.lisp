@@ -47,17 +47,22 @@
   (format t "  </ul>
 </body></html>"))
 
-(defun mpg123 (filename)
+(defun stop-playing ()
    (ignore-errors     
-     (uiop:run-program "killall mpg123"))
+     (uiop:run-program "killall mpg123")))
+
+(defun mpg123 (&rest filenames)
+   (stop-playing)
    (let
-     ((command (format nil "mpg123 '~a' &" (namestring filename))))
+     ((command (format nil "mpg123 ~{~a~^ ~} &~%" filenames)))
+     (format *error-output* "COMMAND IS:~a~%" command)
      (uiop:run-program command)))
 
 (defun play (mp3id)
   (let
     ((action (second (cdr (assoc mp3id *mp3s* :test #'equal)))))
-    (funcall action)
+    (format *error-output* "WILL EVAL: ~a~%" action)
+    (eval action)
     (h303)))
 
 (defun serve (port)
@@ -77,16 +82,28 @@
                 (t (h400))))))))))
 
 
+(directory (format nil "~a~a" *base-dir* "/*/"))
 
 (defun scan ()
   (setf *mp3s*
-        (loop for file in (directory (format nil "~a~a" *base-dir* "/*.mp3"))
-              collect (cons
-                        (symbol-name (gensym))
-                        (list
-                          file
-                          (lambda ()
-                            (mpg123 file)))))))
+        (concatenate 'list
+          (loop for file in (directory (format nil "~a~a" *base-dir* "/*.mp3"))
+                collect (cons
+                          (symbol-name (gensym))
+                          (list
+                            file
+                            `(mpg123 ,(format nil "'~a'" (namestring file))))))
+          (loop for file in (directory (format nil "~a~a" *base-dir* "/*/"))
+                collect (cons
+                          (symbol-name (gensym))
+                          (list
+                            file
+                            `(mpg123 ,@(mapcar
+                                         (lambda (mp3)
+                                           (format nil "'~a'" mp3))
+                                         (directory
+                                           (format nil "~a*.mp3" (namestring file)))))))))))
+
 
 (defun main ()
   (scan)
