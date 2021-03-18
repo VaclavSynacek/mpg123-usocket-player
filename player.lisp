@@ -126,7 +126,9 @@
 
 
 (defun main ()
+  (format t "Minimal Player starting~%")
   (scan)
-  (serve 9999))
+  (serve 9999)
+  (format t "Minimal Player ends~%"))
 
 (main)
