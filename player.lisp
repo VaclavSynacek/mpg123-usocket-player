@@ -24,7 +24,7 @@
   (format t
     "
 <li><form action=\"/~a/\" method=\"post\">
-      <input type=\"submit\" value=\"Play\" />
+      <input type=\"submit\" value=\"----&gt;\" />
     </form>
     <span>~a</span>
 </li>"
@@ -50,6 +50,14 @@
 (defun stop-playing ()
    (ignore-errors     
      (uiop:run-program "killall mpg123")))
+
+(defun pause-playing ()
+   (ignore-errors     
+     (uiop:run-program "killall -STOP mpg123")))
+
+(defun resume-playing ()
+   (ignore-errors     
+     (uiop:run-program "killall -CONT mpg123")))
 
 (defun mpg123 (&rest filenames)
    (stop-playing)
@@ -87,6 +95,18 @@
 (defun scan ()
   (setf *mp3s*
         (concatenate 'list
+          (list (cons (symbol-name (gensym))
+                      (list
+                        "Stop everything!!!"
+                        `(stop-playing)))
+                (cons (symbol-name (gensym))
+                      (list
+                        "Pause"
+                        `(pause-playing)))
+                (cons (symbol-name (gensym))
+                      (list
+                        "Resume"
+                        `(resume-playing))))
           (loop for file in (directory (format nil "~a~a" *base-dir* "/*.mp3"))
                 collect (cons
                           (symbol-name (gensym))
