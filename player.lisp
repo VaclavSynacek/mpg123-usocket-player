@@ -83,9 +83,9 @@
          (lambda (p)
            (or (directory-pathname-p p)
                (string-equal "mp3" (pathname-type p))))
-         (directory (make-pathname
-                      :directory (pathname-directory *base-dir*)
-                      :name :wild :type :wild)))))
+         (append
+           (directory (uiop:merge-pathnames* uiop:*wild-directory* *base-dir*))
+           (directory (uiop:merge-pathnames* uiop:*wild-file* *base-dir*))))))
     (dolist (file (sort item-paths #'string-lessp :key #'namestring))
       (push (make-item
               (subseq (namestring file) base-dir-length)
