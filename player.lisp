@@ -11,6 +11,8 @@
 
 (defvar *items* '())
 
+(defvar *special-items* '())
+
 (defun make-item (label action)
   (list
     (symbol-name (gensym))
@@ -32,6 +34,9 @@
 (defun find-item-by-id (id items)
   (find id items :key #'item-id :test #'string=))
 
+(defun find-item (id)
+  (find-item-by-id id (append *items* *special-items*)))
+
 (defun h200 ()
     (format t "HTTP/1.0 200 OK~%")
     (format t "Content-Type: text/html; charset=utf-8~%~%"))
@@ -42,11 +47,20 @@
 (defun h400 ()
     (format t "HTTP/1.0 400 Bad Request~%~%"))
 
-(defun li (item)
+(defun special-item-render (item)
+  (format t
+    "<form action=\"/~a/\" method=\"post\">
+      <input type=\"submit\" value=\"~a\" />
+    </form>"
+   (item-id item)
+   (item-label item)))
+
+
+(defun item-render (item)
   (format t
     "
 <li><form action=\"/~a/\" method=\"post\">
-      <input type=\"submit\" value=\"----&gt;\" />
+      <input type=\"submit\" value=\"Play\" />
     </form>
     <span>~a</span>
 </li>"
@@ -63,9 +77,13 @@
 </head>
 <body>
   <h1>Minimal Player</h1>
-  <ul>")
+  <ul>
+    <li>")
+  (loop for item in *special-items*
+          do (special-item-render item))
+  (format t "</li>")
   (loop for item in *items*
-        do (li item))
+        do (item-render item))
   (format t "  </ul>
 </body></html>"))
 
@@ -86,7 +104,7 @@
      (uiop:run-program command)))
 
 (defun play (id)
-  (item-act (find-item-by-id id *items*))
+  (item-act (find-item id))
   (h303))
 
 (defun serve (port)
@@ -105,23 +123,21 @@
                 (t (h400)))))))))
 
 
-(defun scan ()
-  (let
-    ((base-dir-length (length (namestring *base-dir*))))
-    (format t "BASE DIR LENGHT: ~a~%" base-dir-length)
-    (setf *items* '())
-    (push (make-item
-            "Stop everything!!!"
+(defun init ()
+  (setf *special-items*
+    (list (make-item "Stop everything!!!"
             (lambda () (stop-playing)))
-          *items*)
-    (push (make-item
+          (make-item
             "Pause"
             (lambda () (pause-playing)))
-          *items*)
-    (push (make-item
+          (make-item
             "Resume"
-            (lambda () (resume-playing)))
-          *items*)
+            (lambda () (resume-playing))))))
+
+(defun scan-files ()
+  (setf *items* '())
+  (let
+    ((base-dir-length (length (namestring *base-dir*))))
     (dolist (file (sort (append
                          (directory (format nil "~a~a" *base-dir* "/*.mp3"))
                          (directory (format nil "~a~a" *base-dir* "/*/")))
@@ -140,7 +156,8 @@
 
 (defun main ()
   (format t "Minimal Player starting~%")
-  (scan)
+  (init)
+  (scan-files)
   (serve 9999)
   (format t "Minimal Player ends~%"))
 
