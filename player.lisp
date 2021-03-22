@@ -83,9 +83,11 @@
          (lambda (p)
            (or (directory-pathname-p p)
                (string-equal "mp3" (pathname-type p))))
-         (append
-           (directory (uiop:merge-pathnames* uiop:*wild-directory* *base-dir*))
-           (directory (uiop:merge-pathnames* uiop:*wild-file* *base-dir*))))))
+         (remove-duplicates
+           (append
+             (directory (uiop:merge-pathnames* uiop:*wild-directory* *base-dir*))
+             (directory (uiop:merge-pathnames* uiop:*wild-file* *base-dir*)))
+           :key #'namestring :test #'string=))))
     (dolist (file (sort item-paths #'string-lessp :key #'namestring))
       (push (make-item
               (subseq (namestring file) base-dir-length)
@@ -177,7 +179,10 @@
                  (play (let
                          ((r (subseq first-line 6)))
                          (subseq r 0 (position #\/ r)))))
-                (t (h400)))))))))
+                (t (h400))))
+            (force-output stream)
+            (finish-output stream)
+            #+ccl (sleep 2))))))
 
 
 (defun main ()
