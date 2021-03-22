@@ -5,17 +5,44 @@
   (:use :cl :usocket :uiop))
 (in-package :player)
 
+;; ****************************************************
+;; Section wrapping command line tools this is based on
+;; ****************************************************
 
 (defvar *base-dir*)
 (setf *base-dir* (first (directory "~/music/")))
 
-(defvar *items* '())
+(defun stop-playing ()
+  (uiop:run-program "killall mpg123" :ignore-error-status t))
 
+(defun pause-playing ()
+  (uiop:run-program "killall -STOP mpg123" :ignore-error-status t))
+
+(defun resume-playing ()
+  (uiop:run-program "killall -CONT mpg123" :ignore-error-status t))
+
+(defun mpg123 (&rest filenames)
+   (stop-playing)
+   (let
+     ((command (format nil "mpg123 ~{~a~^ ~} &~%" filenames)))
+     (format *error-output* "COMMAND IS:~a~%" command)
+     (uiop:run-program command)))
+
+
+;; ************************************************************
+;; Section implementing internal state and data representations
+;; ************************************************************
+
+(defvar *items* '())
 (defvar *special-items* '())
 
 (defun make-item (label action)
   (list
-    (symbol-name (gensym))
+    (remove-if-not (lambda (ch)
+                     (and
+                       (alphanumericp ch)
+                       (< (char-code ch) 124)))
+                   label)
     label
     action))
 
@@ -37,6 +64,41 @@
 (defun find-item (id)
   (find-item-by-id id (append *items* *special-items*)))
 
+(defun init-special-items ()
+  (setf *special-items*
+    (list (make-item "Stop everything!!!"
+            (lambda () (stop-playing)))
+          (make-item
+            "Pause"
+            (lambda () (pause-playing)))
+          (make-item
+            "Resume"
+            (lambda () (resume-playing))))))
+
+(defun init-music-items ()
+  (setf *items* '())
+  (let
+    ((base-dir-length (length (namestring *base-dir*))))
+    (dolist (file (sort (append
+                         (directory (format nil "~a~a" *base-dir* "/*.mp3"))
+                         (directory (format nil "~a~a" *base-dir* "/*/")))
+                        #'string-lessp :key #'namestring))
+      (push (make-item
+              (subseq (namestring file) base-dir-length)
+              (lambda ()
+                (mpg123 (format nil "'~a'~a"
+                                (namestring file)
+                                (if (directory-pathname-p file)
+                                  "*.mp3"
+                                  "")))))
+            *items*))
+    (setf *items* (reverse *items*))))
+
+
+;; ***********************************
+;; Section implementing http interface
+;; ***********************************
+
 (defun h200 ()
     (format t "HTTP/1.0 200 OK~%")
     (format t "Content-Type: text/html; charset=utf-8~%~%"))
@@ -55,7 +117,6 @@
    (item-id item)
    (item-label item)))
 
-
 (defun item-render (item)
   (format t
     "
@@ -70,6 +131,7 @@
 
 (defun index ()
   (h200)
+  (init-music-items)
   (format t "<html>
 <head>
   <title>Minimal Player</title>
@@ -86,22 +148,6 @@
         do (item-render item))
   (format t "  </ul>
 </body></html>"))
-
-(defun stop-playing ()
-  (uiop:run-program "killall mpg123" :ignore-error-status t))
-
-(defun pause-playing ()
-  (uiop:run-program "killall -STOP mpg123" :ignore-error-status t))
-
-(defun resume-playing ()
-  (uiop:run-program "killall -CONT mpg123" :ignore-error-status t))
-
-(defun mpg123 (&rest filenames)
-   (stop-playing)
-   (let
-     ((command (format nil "mpg123 ~{~a~^ ~} &~%" filenames)))
-     (format *error-output* "COMMAND IS:~a~%" command)
-     (uiop:run-program command)))
 
 (defun play (id)
   (item-act (find-item id))
@@ -123,42 +169,12 @@
                 (t (h400)))))))))
 
 
-(defun init ()
-  (setf *special-items*
-    (list (make-item "Stop everything!!!"
-            (lambda () (stop-playing)))
-          (make-item
-            "Pause"
-            (lambda () (pause-playing)))
-          (make-item
-            "Resume"
-            (lambda () (resume-playing))))))
-
-(defun scan-files ()
-  (setf *items* '())
-  (let
-    ((base-dir-length (length (namestring *base-dir*))))
-    (dolist (file (sort (append
-                         (directory (format nil "~a~a" *base-dir* "/*.mp3"))
-                         (directory (format nil "~a~a" *base-dir* "/*/")))
-                        #'string-lessp :key #'namestring))
-      (push (make-item
-              (subseq (namestring file) base-dir-length)
-              (lambda ()
-                (mpg123 (format nil "'~a'~a"
-                                (namestring file)
-                                (if (directory-pathname-p file)
-                                  "*.mp3"
-                                  "")))))
-            *items*))
-    (setf *items* (reverse *items*))))
-
-
 (defun main ()
   (format t "Minimal Player starting~%")
-  (init)
-  (scan-files)
+  (init-special-items)
   (serve 9999)
   (format t "Minimal Player ends~%"))
 
 (main)
+
+
