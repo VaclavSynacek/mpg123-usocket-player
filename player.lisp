@@ -69,11 +69,9 @@
   (setf *special-items*
     (list (make-item "Stop everything!!!"
             (lambda () (stop-playing)))
-          (make-item
-            "Pause"
+          (make-item "Pause"
             (lambda () (pause-playing)))
-          (make-item
-            "Resume"
+          (make-item "Resume"
             (lambda () (resume-playing))))))
 
 (defun init-music-items ()
