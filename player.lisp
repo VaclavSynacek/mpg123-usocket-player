@@ -84,14 +84,16 @@
                         #'string-lessp :key #'namestring))
       (push (make-item
               (subseq (namestring file) base-dir-length)
-              (lambda ()
-                (mpg123 (format nil "'~a'~a"
-                                (namestring file)
-                                (if (directory-pathname-p file)
-                                  "*.mp3"
-                                  "")))))
-            *items*))
-    (setf *items* (reverse *items*))))
+              (let
+                ((file-to-close-over file))
+                (lambda ()
+                  (mpg123 (format nil "'~a'~a"
+                                  (namestring file-to-close-over)
+                                  (if (directory-pathname-p file-to-close-over)
+                                    "*.mp3"
+                                    ""))))))
+            *items*)))
+  (setf *items* (nreverse *items*)))
 
 
 ;; ***********************************
