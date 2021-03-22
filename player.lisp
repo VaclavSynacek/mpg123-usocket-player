@@ -12,21 +12,22 @@
 (defvar *base-dir*)
 (setf *base-dir* (first (directory "~/music/")))
 
+(defun execute (command &key (ignore-error-status nil))
+  (format *error-output* "EXECUTING: ~a~%" command)
+  (uiop:run-program command :ignore-error-status ignore-error-status))
+
 (defun stop-playing ()
-  (uiop:run-program "killall mpg123" :ignore-error-status t))
+  (execute "killall mpg123" :ignore-error-status t))
 
 (defun pause-playing ()
-  (uiop:run-program "killall -STOP mpg123" :ignore-error-status t))
+  (execute "killall -STOP mpg123" :ignore-error-status t))
 
 (defun resume-playing ()
-  (uiop:run-program "killall -CONT mpg123" :ignore-error-status t))
+  (execute "killall -CONT mpg123" :ignore-error-status t))
 
 (defun mpg123 (&rest filenames)
-   (stop-playing)
-   (let
-     ((command (format nil "mpg123 ~{~a~^ ~} &~%" filenames)))
-     (format *error-output* "COMMAND IS:~a~%" command)
-     (uiop:run-program command)))
+  (stop-playing)
+  (execute (format nil "mpg123 ~{~a~^ ~} &" filenames)))
 
 
 ;; ************************************************************
