@@ -151,8 +151,13 @@
 </body></html>"))
 
 (defun play (id)
-  (item-act (find-item id))
-  (h303))
+  (let
+    ((item (find-item id)))
+    (if item
+      (progn
+        (item-act item)
+        (h303))
+      (h400))))
 
 (defun serve (port)
   (usocket:with-socket-listener (socket "0.0.0.0" port :reuse-address t)
