@@ -12,7 +12,8 @@
 (defvar *mp3s*)
 
 (defun h200 ()
-    (format t "HTTP/1.0 200 OK~%~%"))
+    (format t "HTTP/1.0 200 OK~%")
+    (format t "Content-Type: text/html; charset=utf-8~%~%"))
 
 (defun h303 ()
     (format t "HTTP/1.0 303 See Other~%Location: /~%~%"))
