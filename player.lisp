@@ -119,17 +119,18 @@
           "Resume"
           (lambda () (resume-playing)))
         *items*)
-  (dolist (file (directory (format nil "~a~a" *base-dir* "/*.mp3")))
+  (dolist (file (sort (append
+                       (directory (format nil "~a~a" *base-dir* "/*.mp3"))
+                       (directory (format nil "~a~a" *base-dir* "/*/")))
+                      #'string-lessp :key #'namestring))
     (push (make-item
             file
             (lambda ()
-              (mpg123 (format nil "'~a'" (namestring file)))))
-          *items*))
-  (dolist (file (directory (format nil "~a~a" *base-dir* "/*/")))
-    (push (make-item
-            file
-            (lambda ()
-              (mpg123 (format nil "'~a'*.mp3" (namestring file)))))
+              (mpg123 (format nil "'~a'~a"
+                              (namestring file)
+                              (if (directory-pathname-p file)
+                                "*.mp3"
+                                "")))))
           *items*))
   (setf *items* (reverse *items*)))
 
