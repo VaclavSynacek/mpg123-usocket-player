@@ -77,11 +77,16 @@
 (defun init-music-items ()
   (setf *items* '())
   (let
-    ((base-dir-length (length (namestring *base-dir*))))
-    (dolist (file (sort (append
-                         (directory (format nil "~a~a" *base-dir* "/*.mp3"))
-                         (directory (format nil "~a~a" *base-dir* "/*/")))
-                        #'string-lessp :key #'namestring))
+    ((base-dir-length (length (namestring *base-dir*)))
+     (item-paths
+       (remove-if-not
+         (lambda (p)
+           (or (directory-pathname-p p)
+               (string-equal "mp3" (pathname-type p))))
+         (directory (make-pathname
+                      :directory (pathname-directory *base-dir*)
+                      :name :wild :type :wild)))))
+    (dolist (file (sort item-paths #'string-lessp :key #'namestring))
       (push (make-item
               (subseq (namestring file) base-dir-length)
               (let
