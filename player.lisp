@@ -106,33 +106,36 @@
 
 
 (defun scan ()
-  (setf *items* '())
-  (push (make-item
-          "Stop everything!!!"
-          (lambda () (stop-playing)))
-        *items*)
-  (push (make-item
-          "Pause"
-          (lambda () (pause-playing)))
-        *items*)
-  (push (make-item
-          "Resume"
-          (lambda () (resume-playing)))
-        *items*)
-  (dolist (file (sort (append
-                       (directory (format nil "~a~a" *base-dir* "/*.mp3"))
-                       (directory (format nil "~a~a" *base-dir* "/*/")))
-                      #'string-lessp :key #'namestring))
+  (let
+    ((base-dir-length (length (namestring *base-dir*))))
+    (format t "BASE DIR LENGHT: ~a~%" base-dir-length)
+    (setf *items* '())
     (push (make-item
-            file
-            (lambda ()
-              (mpg123 (format nil "'~a'~a"
-                              (namestring file)
-                              (if (directory-pathname-p file)
-                                "*.mp3"
-                                "")))))
-          *items*))
-  (setf *items* (reverse *items*)))
+            "Stop everything!!!"
+            (lambda () (stop-playing)))
+          *items*)
+    (push (make-item
+            "Pause"
+            (lambda () (pause-playing)))
+          *items*)
+    (push (make-item
+            "Resume"
+            (lambda () (resume-playing)))
+          *items*)
+    (dolist (file (sort (append
+                         (directory (format nil "~a~a" *base-dir* "/*.mp3"))
+                         (directory (format nil "~a~a" *base-dir* "/*/")))
+                        #'string-lessp :key #'namestring))
+      (push (make-item
+              (subseq (namestring file) base-dir-length)
+              (lambda ()
+                (mpg123 (format nil "'~a'~a"
+                                (namestring file)
+                                (if (directory-pathname-p file)
+                                  "*.mp3"
+                                  "")))))
+            *items*))
+    (setf *items* (reverse *items*))))
 
 
 (defun main ()
