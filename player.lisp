@@ -129,11 +129,7 @@
     (push (make-item
             file
             (lambda ()
-              (apply #'mpg123 (mapcar
-                                (lambda (mp3)
-                                  (format nil "'~a'" mp3))
-                                (directory
-                                  (format nil "~a*.mp3" (namestring file)))))))
+              (mpg123 (format nil "'~a'*.mp3" (namestring file)))))
           *items*))
   (setf *items* (reverse *items*)))
 
