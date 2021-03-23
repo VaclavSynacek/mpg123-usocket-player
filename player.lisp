@@ -16,22 +16,22 @@
                         :want-non-wild t
                         :ensure-absolute t))
 
-(defun execute (command)
+(defun execute (command &key (ignore-error-status nil))
   (format *error-output* "EXECUTING: ~a~%" command)
-  (uiop:launch-program command))
+  (uiop:run-program command :ignore-error-status ignore-error-status))
 
 (defun stop-playing ()
-  (execute "killall mpg123"))
+  (execute "killall mpg123" :ignore-error-status t))
 
 (defun pause-playing ()
-  (execute "killall -STOP mpg123"))
+  (execute "killall -STOP mpg123" :ignore-error-status t))
 
 (defun resume-playing ()
-  (execute "killall -CONT mpg123"))
+  (execute "killall -CONT mpg123" :ignore-error-status t))
 
 (defun mpg123 (&rest filenames)
   (stop-playing)
-  (execute (format nil "mpg123 ~{~a~^ ~}" filenames)))
+  (execute (format nil "mpg123 ~{~a~^ ~} &" filenames)))
 
 
 ;; ************************************************************
@@ -186,7 +186,7 @@
                 (t (h400)))
               (force-output stream)
               (finish-output stream)
-              #+ccl (sleep 2))))))))
+              (sleep 1))))))))
 
 (defun main ()
   (format t "Minimal Player starting~%")
