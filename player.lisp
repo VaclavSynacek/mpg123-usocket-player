@@ -16,24 +16,22 @@
                         :want-non-wild t
                         :ensure-absolute t))
 
-
-
-(defun execute (command &key (ignore-error-status nil))
+(defun execute (command)
   (format *error-output* "EXECUTING: ~a~%" command)
-  (uiop:run-program command :ignore-error-status ignore-error-status))
+  (uiop:launch-program command))
 
 (defun stop-playing ()
-  (execute "killall mpg123" :ignore-error-status t))
+  (execute "killall mpg123"))
 
 (defun pause-playing ()
-  (execute "killall -STOP mpg123" :ignore-error-status t))
+  (execute "killall -STOP mpg123"))
 
 (defun resume-playing ()
-  (execute "killall -CONT mpg123" :ignore-error-status t))
+  (execute "killall -CONT mpg123"))
 
 (defun mpg123 (&rest filenames)
   (stop-playing)
-  (execute (format nil "mpg123 ~{~a~^ ~} &" filenames)))
+  (execute (format nil "mpg123 ~{~a~^ ~}" filenames)))
 
 
 ;; ************************************************************
