@@ -10,7 +10,13 @@
 ;; ****************************************************
 
 (defvar *base-dir*)
-(setf *base-dir* (first (directory "~/music/")))
+(setf *base-dir* 
+  (uiop:ensure-pathname (uiop:truenamize "~/music/")
+                        :ensure-directory t
+                        :want-non-wild t
+                        :ensure-absolute t))
+
+
 
 (defun execute (command &key (ignore-error-status nil))
   (format *error-output* "EXECUTING: ~a~%" command)
@@ -75,32 +81,30 @@
             (lambda () (resume-playing))))))
 
 (defun init-music-items ()
-  (setf *items* '())
-  (let
+  (let*
     ((base-dir-length (length (namestring *base-dir*)))
      (item-paths
-       (remove-if-not
-         (lambda (p)
-           (or (directory-pathname-p p)
-               (string-equal "mp3" (pathname-type p))))
-         (remove-duplicates
-           (append
-             (directory (uiop:merge-pathnames* uiop:*wild-directory* *base-dir*))
-             (directory (uiop:merge-pathnames* uiop:*wild-file* *base-dir*)))
-           :key #'namestring :test #'string=))))
-    (dolist (file (sort item-paths #'string-lessp :key #'namestring))
-      (push (make-item
-              (subseq (namestring file) base-dir-length)
-              (let
-                ((file-to-close-over file))
-                (lambda ()
-                  (mpg123 (format nil "'~a'~a"
-                                  (namestring file-to-close-over)
-                                  (if (directory-pathname-p file-to-close-over)
-                                    "*.mp3"
-                                    ""))))))
-            *items*)))
-  (setf *items* (nreverse *items*)))
+       (append
+         (uiop:subdirectories *base-dir*)
+         (remove-if-not
+           (lambda (p)
+             (string-equal "mp3" (pathname-type p)))
+           (uiop:directory-files *base-dir*))))
+     (sorted-item-paths (sort item-paths #'string-lessp :key #'namestring))
+     (items (mapcar
+              (lambda (file)
+                (make-item
+                  (subseq (namestring file) base-dir-length)
+                  (let
+                    ((file-to-close-over file))
+                    (lambda ()
+                      (mpg123 (format nil "'~a'~a"
+                                      (namestring file-to-close-over)
+                                      (if (directory-pathname-p file-to-close-over)
+                                        "*.mp3"
+                                        "")))))))
+             sorted-item-paths)))
+    (setf *items* items)))
 
 
 ;; ***********************************
