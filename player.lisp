@@ -171,21 +171,23 @@
 (defun serve (port)
   (usocket:with-socket-listener (socket "0.0.0.0" port :reuse-address t)
       (loop 
-        (usocket:with-server-socket (connection (usocket:socket-accept socket))
-         (with-open-stream (stream (usocket:socket-stream connection))
-            (let* ((first-line (read-line stream))
-                   (*standard-output* stream))       
-              (cond
-                ((string= "GET / " (subseq first-line 0 6))  (index))
-                ((string= "POST /" (subseq first-line 0 6))
-                 (play (let
-                         ((r (subseq first-line 6)))
-                         (subseq r 0 (position #\/ r)))))
-                (t (h400))))
-            (force-output stream)
-            (finish-output stream)
-            #+ccl (sleep 2))))))
-
+        (handler-case
+          (usocket:with-server-socket (connection (usocket:socket-accept socket))
+            (with-open-stream (stream (usocket:socket-stream connection))
+              (let* ((first-line (read-line stream))
+                     (*standard-output* stream))
+                (cond
+                  ((string= "GET / " (subseq first-line 0 6))  (index))
+                  ((string= "POST /" (subseq first-line 0 6))
+                   (play (let
+                           ((r (subseq first-line 6)))
+                           (subseq r 0 (position #\/ r)))))
+                  (t (h400))))
+              (force-output stream)
+              (finish-output stream)
+              #+ccl (sleep 2)))
+          (usocket:socket-condition (sc)
+            (format *error-output* "WARN Got socket condition:~%~a~%" sc))))))
 
 (defun main ()
   (format t "Minimal Player starting~%")
