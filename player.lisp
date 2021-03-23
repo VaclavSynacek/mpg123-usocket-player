@@ -1,8 +1,8 @@
-(ql:quickload :usocket)
 
 (in-package :cl)
 (defpackage :player
-  (:use :cl :usocket :uiop))
+  (:use :cl :usocket :uiop)
+  (:export :main))
 (in-package :player)
 
 ;; ****************************************************
@@ -193,7 +193,4 @@
   (init-special-items)
   (serve 9999)
   (format t "Minimal Player ends~%"))
-
-(main)
-
 
